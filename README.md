@@ -1,7 +1,15 @@
 # Egocentric Whole-body Human Mesh Recovery with Prior-guided Learning
 
 
+## Installation
+
+```bash
+pip install -r requirements.txt
 
 
-# Egocentric-whole-body-human-mesh-recovery
-# Egocentric-whole-body-human-mesh-recovery-with-prior-guided-learning
+## Training
+### Local Traning
+'''bash
+bash local_train.sh
+
+### Server Traning(SLURM)
