@@ -22,3 +22,5 @@ huma_body_priors
 DPoserX/lib/body_model/smplx
 DPoserX/lib/data
 humandata.npz
+main/transformer_utils/mmpose/models/utils/fisheye_camera
+main/transformer_utils/mmpose/models/backbones/utils/fisheye_camera
