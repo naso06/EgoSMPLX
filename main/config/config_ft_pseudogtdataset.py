@@ -65,7 +65,7 @@ Talkshow_train_sample_interval = 10
 # fine-tune
 fine_tune = None # 'backbone', 'head', None for full network tuning
 
-smplx_loss_weight = 1.0 #2 for agora_model for smplx shape
+smplx_loss_weight = 0.01 #2 for agora_model for smplx shape
 smplx_pose_weight = 10.0
 
 smplx_kps_3d_weight = 100.0

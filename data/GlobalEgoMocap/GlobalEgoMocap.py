@@ -14,7 +14,7 @@ class GlobalEgoMocap(HumanDataset):
     def __init__(self, transform, data_split):
         super(GlobalEgoMocap, self).__init__(transform, data_split)
 
-        # 경로 설정
+      
         self.data_dir = '/media/cv1/SeagateHDD2TB/TestDataset_EgocentricGlobalPose/human_data_test'
         self.img_shape = (1024, 1280)
         self.annot_path = osp.join(self.data_dir, 'humandata.npz')
@@ -42,13 +42,13 @@ class GlobalEgoMocap(HumanDataset):
                 self.image_paths, self.bbox_xywh,
                 self.keypoints3d, self.keypoints3d_mask
             ):
-                # -------- 정규화 코드 추가 시작 --------
-                root_idx = 0  # pelvis 또는 기준 joint index
-                root = kp3d[root_idx]  # 기준점 추출
-                kp3d_centered = kp3d - root  # 중심 정렬
-                scale = np.linalg.norm(kp3d_centered, axis=1).max() + 1e-8  # max 거리로 정규화
-                kp3d_normalized = kp3d_centered / scale  # (137, 3)
-                # -------- 정규화 코드 추가 끝 --------
+        
+                root_idx = 0 
+                root = kp3d[root_idx]
+                kp3d_centered = kp3d - root 
+                scale = np.linalg.norm(kp3d_centered, axis=1).max() + 1e-8 
+                kp3d_normalized = kp3d_centered / scale 
+             
 
                 self.datalist.append({
                     'img_path': img_path,
@@ -56,7 +56,7 @@ class GlobalEgoMocap(HumanDataset):
                     'bbox': bbox,
                     'keypoints3d': kp3d,
                     'keypoints3d_mask': kp3d_mask,
-                    'keypoints3d_norm': kp3d_normalized.astype(np.float32),  # ✅ 정규화 결과 저장
+                    'keypoints3d_norm': kp3d_normalized.astype(np.float32), 
                     'keypoints2d': np.zeros((137, 3), dtype=np.float32),
                     'keypoints2d_mask': np.zeros((137,), dtype=np.float32),
                     'smplx_param': {
@@ -127,13 +127,12 @@ class GlobalEgoMocap(HumanDataset):
 
     def visualize_img_and_joint_separate(self, sample_idx=0):
         sample = self.datalist[sample_idx]
-    
-        # 이미지 불러오기
+   
         img_path = osp.join(self.data_dir, sample['img_path'])
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        # SMPLX mapping 기반으로 15개 joint 선택
+     
         mo2cap2_to_smplx = {
             "neck": 7, "right_shoulder": 9, "right_elbow": 11, "right_wrist": 13,
             "left_shoulder": 8, "left_elbow": 10, "left_wrist": 12,
@@ -151,7 +150,6 @@ class GlobalEgoMocap(HumanDataset):
         joints_3d_full = sample['joint_cam']  # (137, 3)
         joints_3d = joints_3d_full[mapping_indices]  # (15, 3)
 
-        # 새 skeleton chain 정의
         skeleton_chain = [
             [0, 1, 2, 3],
             [0, 4, 5, 6],

@@ -14,7 +14,6 @@ class SceneEgo(HumanDataset):
     def __init__(self, transform, data_split):
         super(SceneEgo, self).__init__(transform, data_split)
 
-        # 경로 설정
         self.data_dir = '/media/cv1/SeagateHDD2TB/SceneEgo_test/human_data_test'
         self.img_shape = (1024, 1280)
         self.annot_path = osp.join(self.data_dir, 'humandata.npz')
@@ -121,12 +120,12 @@ class SceneEgo(HumanDataset):
     def visualize_img_and_joint_separate(self, sample_idx=0):
         sample = self.datalist[sample_idx]
     
-        # 이미지 불러오기
+
         img_path = osp.join(self.data_dir, sample['img_path'])
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        # SMPLX mapping 기반으로 15개 joint 선택
+
         mo2cap2_to_smplx = {
             "neck": 7, "right_shoulder": 9, "right_elbow": 11, "right_wrist": 13,
             "left_shoulder": 8, "left_elbow": 10, "left_wrist": 12,
@@ -144,7 +143,7 @@ class SceneEgo(HumanDataset):
         joints_3d_full = sample['joint_cam']  # (137, 3)
         joints_3d = joints_3d_full[mapping_indices]  # (15, 3)
 
-        # 새 skeleton chain 정의
+
         skeleton_chain = [
             [0, 1, 2, 3],
             [0, 4, 5, 6],

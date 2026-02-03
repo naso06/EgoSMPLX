@@ -211,11 +211,6 @@ def process_db_coord(joint_img, joint_cam, joint_valid, do_flip, img_shape, flip
     joint_img[:, 0] = joint_img[:, 0] / cfg.input_img_shape[1] * cfg.output_hm_shape[2]
     joint_img[:, 1] = joint_img[:, 1] / cfg.input_img_shape[0] * cfg.output_hm_shape[1]
    
-    # check truncation
-    # joint_trunc = joint_valid * ((joint_img_original[:, 0] > 0) * (joint_img[:, 0] >= 0) * (joint_img[:, 0] < cfg.output_hm_shape[2]) * \
-    #                              (joint_img_original[:, 1] > 0) *(joint_img[:, 1] >= 0) * (joint_img[:, 1] < cfg.output_hm_shape[1])).reshape(-1,
-    #                                                                                                           1).astype(
-    #     np.float32)
 
     joint_trunc = ((joint_img_original[:, 0] > 0) * (joint_img[:, 0] >= 0) * (joint_img[:, 0] < cfg.output_hm_shape[2]) * \
                    (joint_img_original[:, 1] > 0) * (joint_img[:, 1] >= 0) * (joint_img[:, 1] < cfg.output_hm_shape[1])).reshape(-1, 1).astype(
@@ -286,8 +281,7 @@ def process_human_model_output(human_model_param, cam_param, do_flip, img_shape,
         shape = torch.FloatTensor(shape).view(1, -1)  # SMPLX shape parameter
         expr = torch.FloatTensor(expr).view(1, -1)  # SMPLX expression parameter
         trans = torch.FloatTensor(trans).view(1, -1)  # translation vector
-        # print(trans)
-        # apply camera extrinsic (rotation)
+      
         # merge root pose and camera rotation
         if 'R' in cam_param:
             R = np.array(cam_param['R'], dtype=np.float32).reshape(3, 3)
@@ -453,13 +447,6 @@ def process_human_model_output(human_model_param, cam_param, do_flip, img_shape,
             if human_model_type == 'smplx':
                 coord_valid[pair[0]], coord_valid[pair[1]] = coord_valid[pair[1]].copy(), coord_valid[pair[0]].copy()
 
-    # x,y affine transform, root-relative depth
-    # joint_img_xy1 = np.concatenate((joint_img[:, :2], np.ones_like(joint_img[:, 0:1])), 1)
-    # joint_img[:, :2] = np.dot(img2bb_trans, joint_img_xy1.transpose(1, 0)).transpose(1, 0)[:, :2]
-    # set_trace()
-
-    ###########
-    # set_trace()
 
     if 'cam_rot' in human_model_param:
 
@@ -475,7 +462,7 @@ def process_human_model_output(human_model_param, cam_param, do_flip, img_shape,
         # print(joint_cam_translation)
         joint_cam_flat = (joint_cam_torch).view(-1, 3)  # (B*J, 3)
 
-        # (B*J, 3) → (B*J, 2): fisheye projection (image 좌표계)
+  
         joint_proj_flat = fisheye_camera.world2camera_pytorch(joint_cam_flat)  # (B*J, 2)
 
 
@@ -493,8 +480,7 @@ def process_human_model_output(human_model_param, cam_param, do_flip, img_shape,
 
         # (B*J, 2) → (B, J, 2)
         joint_img = joint_proj_flat.view(J, 2).detach().cpu().numpy()
-    
-    # joint_img = torch.from_numpy(joint_img).float().to(joint_cam_torch.device)
+
 
     joint_img[:, 0] = joint_img[:, 0] / cfg.input_img_shape[1] * cfg.output_hm_shape[2]
     joint_img[:, 1] = joint_img[:, 1] / cfg.input_img_shape[0] * cfg.output_hm_shape[1]

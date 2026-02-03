@@ -50,21 +50,18 @@ class PseudoGTDataset(HumanDataset):
         self.cam_param = {}
 
         def _extract_subject_id(p: str) -> str:
-            """
-            /.../EgoPW/{train|test|val|validation}/<ID>/... 에서 <ID> 추출
-            없으면 상위 2단계 위 디렉터리명(ID/scene/imgs/file.jpg 가정)
-            """
+           
             parts = Path(p).parts
             for marker in ('train', 'test', 'val', 'validation'):
                 if marker in parts:
                     i = parts.index(marker)
                     if i + 1 < len(parts):
                         return parts[i + 1]
-            # fallback: imgs -> scene -> ID
+           
             try:
                 return Path(p).parents[2].name
             except Exception:
-                # 마지막 수단: 파일 상위 디렉터리명
+               
                 return Path(p).parent.name
 
     

@@ -24,3 +24,5 @@ DPoserX/lib/data
 humandata.npz
 main/transformer_utils/mmpose/models/utils/fisheye_camera
 main/transformer_utils/mmpose/models/backbones/utils/fisheye_camera
+data/eval_saved_param_egowholebody.py
+data/eval_saved_param.py

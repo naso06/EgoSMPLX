@@ -14,10 +14,10 @@ from pdb import set_trace
 class GlobalHandPositionNet(nn.Module):
     def __init__(self, feat_dim=768):
         super().__init__()
-        self.joint_num = len(smpl_x.pos_joint_part['rhand'])  # 한 손 관절 수
-        self.hm_shape = cfg.output_hm_shape  # <-- body와 동일 해상도 사용 (img_feat와 맞추기)
+        self.joint_num = len(smpl_x.pos_joint_part['rhand']) 
+        self.hm_shape = cfg.output_hm_shape 
 
-        # 양손이므로 joint 채널을 2배
+      
         self.conv = make_conv_layers(
             [feat_dim, (2 * self.joint_num) * self.hm_shape[0]],
             kernel=1, stride=1, padding=0, bnrelu_final=False
@@ -39,11 +39,10 @@ class HandTokenRegressor(nn.Module):
         super().__init__()
         self.hidden_dim = hidden_dim
 
-        # joint_num은 입력에서 받아도 되게(고정하지 않기)
         self.token_fc1 = nn.Linear(token_dim, hidden_dim)
-        self.token_fc2 = nn.Linear(hidden_dim, hidden_dim)  # joint마다 쓸 base embedding
+        self.token_fc2 = nn.Linear(hidden_dim, hidden_dim)  
 
-        # (hidden_dim + 3) -> 6D
+  
         self.joint_mlp = nn.Sequential(
             nn.Linear(hidden_dim + 3, hidden_dim),
             nn.ReLU(inplace=True),
@@ -51,21 +50,21 @@ class HandTokenRegressor(nn.Module):
         )
 
     def forward(self, hand_token, hand_joint_coord):
-        # hand_token: (B,2,C), hand_joint_coord: (B,2,J,3)
+       
         B, T, C = hand_token.shape
         _, _, J, _ = hand_joint_coord.shape
 
-        # (B,2,H)
+  
         base = torch.relu(self.token_fc1(hand_token))
         base = self.token_fc2(base)
 
-        # (B,2,J,H) : joint-wise로 broadcast (간단/안전)
+      
         joint_emb = base[:, :, None, :].expand(B, T, J, self.hidden_dim)
 
-        # (B,2,J,H+3)
+      
         x = torch.cat([joint_emb, hand_joint_coord], dim=-1)
 
-        return self.joint_mlp(x)  # (B,2,J,6)
+        return self.joint_mlp(x)  
 
 class PositionNet(nn.Module):
     def __init__(self, part, feat_dim=768):
@@ -98,7 +97,7 @@ class HandRotationNet(nn.Module):
         batch_size = img_feat.shape[0]
         img_feat = self.hand_conv(img_feat)
         img_feat_joints = sample_joint_features(img_feat, joint_coord_img[:, :, :2])
-        feat = torch.cat((img_feat_joints, joint_coord_img), 2)  # batch_size, joint_num, 512+3
+        feat = torch.cat((img_feat_joints, joint_coord_img), 2)  
         hand_pose = self.hand_pose_out(feat.view(batch_size, -1))
         return hand_pose
 
@@ -109,7 +108,7 @@ class BodyRotationNet(nn.Module):
         self.body_conv = make_linear_layers([feat_dim, 512], relu_final=False)
         self.root_pose_out = make_linear_layers([self.joint_num * (512+3), 6], relu_final=False)
         self.body_pose_out = make_linear_layers(
-            [self.joint_num * (512+3), (len(smpl_x.orig_joint_part['body']) - 1) * 6], relu_final=False)  # without root
+            [self.joint_num * (512+3), (len(smpl_x.orig_joint_part['body']) - 1) * 6], relu_final=False)  
         self.shape_out = make_linear_layers([feat_dim, smpl_x.shape_param_dim], relu_final=False)
         self.cam_out = make_linear_layers([feat_dim, 3], relu_final=False)
         self.feat_dim = feat_dim
@@ -129,8 +128,6 @@ class BodyRotationNet(nn.Module):
         body_pose_token = torch.cat((body_pose_token, body_joint_img), 2)
         root_pose = self.root_pose_out(body_pose_token.view(batch_size, -1))
         body_pose = self.body_pose_out(body_pose_token.view(batch_size, -1))
-    
-        # set_trace()
 
         return root_pose, body_pose, shape_param, cam_param, 
 

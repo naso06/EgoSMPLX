@@ -16,7 +16,7 @@ class SceneEgo_Train(HumanDataset):
         """
         super(SceneEgo_Train, self).__init__(transform, data_split)
 
-        # 경로 설정
+       
         self.data_dir = '/media/cv1/SeagateHDD2TB/SceneEgo_train/train/human_data_train'
         self.img_root = '/media/cv1/SeagateHDD2TB/SceneEgo_train/train'
         self.img_shape = (1024, 1280)
@@ -27,7 +27,6 @@ class SceneEgo_Train(HumanDataset):
         if not osp.exists(self.annot_path):
             raise FileNotFoundError(f"Annotation file not found: {self.annot_path}")
 
-        # 캐시 여부에 따라 로드
         if self.use_cache and osp.exists(self.annot_path_cache):
             print(f"[{self.__class__.__name__}] Loading cache from {self.annot_path_cache}")
             self.datalist = self.load_cache(self.annot_path_cache)
@@ -35,7 +34,7 @@ class SceneEgo_Train(HumanDataset):
             print(f"[{self.__class__.__name__}] Loading annotations from {self.annot_path}")
             data = np.load(self.annot_path, allow_pickle=True)
 
-            self.image_paths = data['image_path']  # 상대 경로: {subject}/imgs/img_%06d.jpg
+            self.image_paths = data['image_path']  
             self.bbox_xywh = data['bbox_xywh']
             self.keypoints2d = data['keypoints2d_smplx']
             self.keypoints2d_mask = data['keypoints2d_smplx_mask']
