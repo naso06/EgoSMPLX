@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from nets.smpler_x import PositionNet, HandRotationNet, FaceRegressor, BoxNet, HandRoI, BodyRotationNet, GlobalHandPositionNet, HandTokenRegressor
-# from tokenhmr.lib.models.heads.token_head import SMPLTokenDecoderHead
+
 from nets.loss import CoordLoss, ParamLoss, CELoss
 from utils.human_models import smpl_x, smpl
 from utils.transforms import rot6d_to_axis_angle, restore_bbox
@@ -16,7 +16,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from pdb import set_trace
-# from common.utils.vis import render_mesh_fisheye
+
 from scipy.spatial import cKDTree
 from data import humandata
 import os
@@ -25,10 +25,7 @@ from DPoserX.run.tester.wholebody.smplify import DPoser
 from torch.autograd import Function
 
 
-        
-# from main.transformer_utils.mmpose.models.backbones.ViT_DINO import vit_large
-# from main.transformer_utils.mmpose.models.heads.RAFTDepthNormalDPTDecoder5 import RAFTDepthNormalDPT5
-# from mmengine.config import Config
+
 
 class GradReverse(Function):
     @staticmethod
@@ -129,7 +126,7 @@ class Model(nn.Module):
                 if mode == 'train':
                     self.dposer_x = DPoser(batch_size=cfg.train_batch_size, config_path=cfg.dposerx_cfg_path).cuda()
                     self.trainable_modules = [self.encoder, self.dposer_x, self.body_position_net, self.body_regressor]
-                    #self.trainable_modules = [self.encoder, self.body_position_net, self.body_regressor]
+           
                 else:
                     self.dposer_x = DPoser(batch_size=cfg.test_batch_size, config_path=cfg.dposerx_cfg_path).cuda()
             
@@ -162,14 +159,14 @@ class Model(nn.Module):
                            
         self.special_trainable_modules = []
         
-        # --- ID adversarial head (optional) ---
-        self.id_adv_lambda = float(getattr(cfg, 'id_adv_lambda', 0.0))   # e.g., 0.5
-        self.num_subjects  = int(getattr(cfg, 'num_subjects', 0))        # ID 클래스 수
+     
+        self.id_adv_lambda = float(getattr(cfg, 'id_adv_lambda', 0.0))  
+        self.num_subjects  = int(getattr(cfg, 'num_subjects', 0))        
         if self.id_adv_lambda > 0 and self.num_subjects > 0:
-            # img_feat의 채널 차원 = encoder 출력 채널(보통 cfg.feat_dim과 일치)
+            
             self.id_head = nn.Linear(cfg.feat_dim, self.num_subjects)
             self.id_loss_fn = nn.BCEWithLogitsLoss()
-            # 학습 모듈에 포함(선택)
+            
             self.trainable_modules.append(self.id_head)
             self.head.append(self.id_head) 
 
@@ -186,12 +183,12 @@ class Model(nn.Module):
 
         param_net = param_bb + param_neck + param_head
 
-                # ---- 파라미터 개수 출력 ----
+              
         total_params = sum(p.numel() for p in self.parameters())
         total_trainable = sum(p.numel() for p in self.parameters() if p.requires_grad)
 
         def _m(x):
-            return x / 1e6  # million 단위
+            return x / 1e6  
 
         print("========== SMPLer-X Parameter Counts ==========")
         print(f"Backbone (encoder, trainable) : {param_bb:,}  ({_m(param_bb):.3f} M)")
@@ -228,17 +225,13 @@ class Model(nn.Module):
         self.mapped_pixels = np.array(mapped_pixels, dtype=np.float32).reshape(self.undist_h, self.undist_w, 2)
 
     def _get_subject_scene_dir(self, img_path):
-        """
-        img_path: .../{subject}/{scene}/imgs/filename 형태라고 가정하고
-        마지막 'imgs' 기준으로 바로 앞의 두 디렉토리(subject, scene)를 리턴.
-        실패하면 빈 문자열 반환.
-        """
+      
         if not isinstance(img_path, str):
             return ""
         path = img_path.replace("\\", "/")
         parts = path.split("/")
 
-        # 마지막 'imgs' 위치 찾기
+       
         idx = None
         for j in range(len(parts) - 1, -1, -1):
             if parts[j] == "imgs":
@@ -259,41 +252,36 @@ class Model(nn.Module):
         feat_3chw: torch.Tensor,
         save_path: str,
         alpha: float = 0.45,
-        # 새 인자들: 원래 토큰 그리드와 잘려나간 칸 수
-        orig_grid_hw=(16, 16),           # (H0, W0) = 원래 16x16
-        crop=(0, 2, 0, 2),               # (top, right, bottom, left) = 좌우 2칸
-        upsample: str = "nearest"        # 토큰 경계 또렷: 'nearest' 권장
+    
+        orig_grid_hw=(16, 16),          
+        crop=(0, 2, 0, 2),              
+        upsample: str = "nearest"       
     ):
-        """
-        img_3chw : [3,H,W]
-        feat_3chw: [C,h,w]  (현재 16x12 토큰 그리드로 재배치된 feature)
-        """
+       
         import os
         import matplotlib.pyplot as plt
         import torch.nn.functional as F
 
-        # 1) 채널 평균 → (h,w)
-        hm = feat_3chw.detach().float().mean(0)  # [h,w]  (※ .values 쓰지 마세요)
+       
+        hm = feat_3chw.detach().float().mean(0)  # [h,w]  
 
-        # 2) (선택) 간단 정규화
+     
         hm = (hm - hm.min()) / (hm.max() - hm.min() + 1e-6)
 
-        # 3) 잘려나간 칸만큼 패딩해서 원래 16x16 위치로 복원 + per-pixel alpha 마스크
         H0, W0 = orig_grid_hw         # ex) 16, 16
         t, r, b, l = crop             # ex) (0,2,0,2)
         cam_pad   = torch.zeros((H0, W0), dtype=hm.dtype, device=hm.device)
-        alpha_pad = torch.zeros_like(cam_pad)  # 패딩 영역은 투명(0)
+        alpha_pad = torch.zeros_like(cam_pad) 
         cam_pad[t:H0-b, l:W0-r]   = hm
         alpha_pad[t:H0-b, l:W0-r] = 1.0
 
-        # 4) 이미지 해상도로 업샘플 (히트맵/알파)
         H_img, W_img = img_3chw.shape[-2], img_3chw.shape[-1]
         cam_up = F.interpolate(cam_pad[None, None], size=(H_img, W_img),
                             mode=upsample, align_corners=False if upsample!="nearest" else None)[0, 0].cpu().numpy()
         a_up   = F.interpolate(alpha_pad[None, None], size=(H_img, W_img),
-                            mode="nearest")[0, 0].cpu().numpy()  # 알파는 nearest 권장
+                            mode="nearest")[0, 0].cpu().numpy() 
 
-        # 5) 원본 오버레이 (잘려나간 영역은 자동으로 투명)
+   
         img = img_3chw.detach().cpu().float().clamp(0, 1).permute(1, 2, 0).numpy()
         plt.figure(figsize=(6, 4.5))
         plt.imshow(img)
@@ -305,20 +293,15 @@ class Model(nn.Module):
 
     def visualize_hand_bboxes_on_input(self, img_batch, lhand_bbox, rhand_bbox,
                                        save_dir, meta_info=None):
-        """
-        img_batch : [B, 3, H, W] (inputs['img_ori'])
-        lhand_bbox, rhand_bbox : [B, 4] (xyxy, input_img_shape 기준)
-        """
+      
         os.makedirs(save_dir, exist_ok=True)
 
-        # [B, H, W, C] 로 변환
         img_np = img_batch.detach().cpu().numpy().transpose(0, 2, 3, 1)
 
         B = img_np.shape[0]
         for i in range(B):
             img = img_np[i]
 
-            # 이미지 값 범위에 따라 0~255 uint8 로 변환
             if img.max() <= 1.0:
                 img = (img * 255.0).astype(np.uint8)
             else:
@@ -342,22 +325,10 @@ class Model(nn.Module):
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1,
                                 lineType=cv2.LINE_AA)
 
-            # 왼손: 초록, 오른손: 파랑
             _draw_box(lhand_bbox[i], (0, 255, 0), 'L-hand')
             _draw_box(rhand_bbox[i], (255, 0, 0), 'R-hand')
 
-            # # 파일 이름 결정 (img_path 있으면 거기서 베이스 이름 사용)
-            # if meta_info is not None and 'img_path' in meta_info:
-            #     base = meta_info['img_path'][i]
-            #     if not isinstance(base, str):
-            #         base = f"{i:06d}.png"
-            #     name = os.path.splitext(os.path.basename(base))[0]
-            # else:
-            #     name = f"{i:06d}"
-
-            # out_path = os.path.join(save_dir, f"{name}_hand_bbox.png")
-            # # OpenCV는 BGR 을 기대하므로 RGB -> BGR 로 뒤집어서 저장
-            # cv2.imwrite(out_path, vis[:, :, ::-1])
+         
 
             img_path_i = None
             sub_rel = ""
@@ -406,11 +377,11 @@ class Model(nn.Module):
         for i in range(B):
             img = (tensor_img_np[i] * 255).astype(np.uint8) if tensor_img_np[i].max() <= 1 else tensor_img_np[i].astype(np.uint8)
 
-            # grid 생성
+           
             x = np.linspace(-1, 1, W)
             y = np.linspace(-1, 1, H)
             xx, yy = np.meshgrid(x, y)
-            z = 1.0  # FOV에 해당하는 focal length 기준
+            z = 1.0 
             rays = np.stack([xx, yy, np.full_like(xx, z)], axis=-1)
             rays /= np.linalg.norm(rays, axis=-1, keepdims=True)
             rays_flat = rays.reshape(-1, 3)
@@ -468,41 +439,32 @@ class Model(nn.Module):
 
     def get_coord(self, root_pose, body_pose, lhand_pose, rhand_pose, jaw_pose, shape, expr, cam_trans, mode):
         batch_size = root_pose.shape[0]
-        # set_trace()
+      
         zero_pose = torch.zeros((1, 3)).float().cuda().repeat(batch_size, 1)  # eye poses
-        
-        # if getattr(cfg, 'use_token_decoder', False):
-        #     pad = torch.zeros(body_pose.size(0), 6, dtype=body_pose.dtype, device=body_pose.device) # (B, 2, 3)
-        #     body_pose = torch.cat((body_pose, pad), 1)
-        #     output = self.smpl_layer(betas=shape, body_pose=body_pose, global_orient=root_pose)
-        
-        # else:
+       
         output = self.smplx_layer(betas=shape, body_pose=body_pose, global_orient=root_pose, right_hand_pose=rhand_pose,
                             left_hand_pose=lhand_pose, jaw_pose=jaw_pose, leye_pose=zero_pose,
                             reye_pose=zero_pose, expression=expr)
 
-        mesh_cam = output.vertices + cam_trans[:, None, :]  # ← 최종 mesh_cam은 SMPL 기준
+        mesh_cam = output.vertices + cam_trans[:, None, :] 
 
-        # smplx decoder 사용
-        
-        # camera-centered 3D coordinate
+       
 
         mesh_cam = output.vertices
         if mode == 'test' and cfg.testset == 'AGORA':  # use 144 joints for AGORA evaluation
             joint_cam = output.joints
         else:
             joint_cam = output.joints[:, smpl_x.joint_idx, :]
-            # set_trace()
+           
             
 
 
         B, J, _ = joint_cam.shape
-        # set_trace()
+     
         joint_cam_translation =joint_cam.detach() + cam_trans[:, None, :]
 
         joint_cam_flat = (joint_cam_translation).view(-1, 3)  # (B*J, 3)
 
-        # (B*J, 3) → (B*J, 2): fisheye projection (image 좌표계)
         joint_proj_flat = self.fisheye_camera.world2camera_pytorch(joint_cam_flat)  # (B*J, 2)
 
         # (B*J, 2) → (B, J, 2)
@@ -515,9 +477,9 @@ class Model(nn.Module):
         mesh_cam = mesh_cam + cam_trans[:, None, :]  # for rendering
         joint_cam_wo_ra = joint_cam.clone()
         
-        # 2. heatmap 좌표계로 변환
-        joint_proj[..., 0] = joint_proj[..., 0] / cfg.input_img_shape[1] * cfg.output_hm_shape[2] # x: w 기준
-        joint_proj[..., 1] = joint_proj[..., 1] / cfg.input_img_shape[0] * cfg.output_hm_shape[1] # y: h 기준
+     
+        joint_proj[..., 0] = joint_proj[..., 0] / cfg.input_img_shape[1] * cfg.output_hm_shape[2] 
+        joint_proj[..., 1] = joint_proj[..., 1] / cfg.input_img_shape[0] * cfg.output_hm_shape[1] 
         
    
         # left hand root (left wrist)-relative 3D coordinatese
@@ -558,7 +520,7 @@ class Model(nn.Module):
             pose[:, :accu[0]], pose[:, accu[0]:accu[1]], pose[:, accu[1]:accu[2]], pose[:, accu[2]:accu[3]], pose[:,
                                                                                                              accu[3]:
                                                                                                              accu[4]]
-        # print(lhand_pose)
+      
         shape = targets['smplx_shape']
         expr = targets['smplx_expr']
         cam_trans = targets['smplx_cam_trans']
@@ -576,15 +538,11 @@ class Model(nn.Module):
         return lhand_bbox_center, rhand_bbox_center, face_bbox_center
     
     def build_forward_map(self,mapped_pixels):
-        """
-        mapped_pixels: (H, W, 2) — dst(i,j) 위치에서 원본 좌표를 가져오는 역방향 맵
-        반환: KDTree와 보정 이미지 좌표 (dst_x, dst_y)
-        """
+    
         H, W = mapped_pixels.shape[:2]
-        src_points = mapped_pixels.reshape(-1, 2)  # (H*W, 2): 원본 좌표계 기준
+        src_points = mapped_pixels.reshape(-1, 2) 
         dst_coords = np.stack(np.meshgrid(np.arange(W), np.arange(H)), axis=-1).reshape(-1, 2)  # (H*W, 2)
 
-        # 유효한 원본 좌표만 사용
         valid_mask = np.all((src_points >= 0) & (src_points < np.array([W, H])), axis=1)
         src_points = src_points[valid_mask]
         dst_coords = dst_coords[valid_mask]
@@ -593,33 +551,20 @@ class Model(nn.Module):
         return tree, dst_coords
 
     def remap_joints_forward(self, joint_orig, tree, dst_coords):
-        """
-        joint_orig: (N, 2) — 원본 이미지 기준 joint
-        tree: KDTree of mapped_pixels (src → dst)
-        dst_coords: 보정된 이미지 좌표
-
-        반환: 보정된 joint 위치 (N, 2)
-        """
+     
         dist, idx = tree.query(joint_orig, k=1)
         joint_remapped = dst_coords[idx]
         return joint_remapped.astype(np.float32)
     
    
     def draw_joint_lines(self, img_np, joints_2d, joint_names, chains, color=(0,255,0)):
-        """
-        img_np: (H,W,3) numpy array (uint8)
-        joints_2d: (N,2) float (xy)
-        joint_names: 이름 리스트
-        chains: 각 limb의 joint 인덱스 chain(순서대로 연결)
-        color: 선 색
-        """
-        # joint 찍기
+       
         for x, y in joints_2d:
             x_int, y_int = int(round(x)), int(round(y))
             if 0 <= x_int < img_np.shape[1] and 0 <= y_int < img_np.shape[0]:
                 cv2.circle(img_np, (x_int, y_int), 3, color, -1)
 
-        # 선 그리기
+ 
         for chain in chains:
             for i in range(len(chain)-1):
                 idx1, idx2 = chain[i], chain[i+1]
@@ -629,24 +574,21 @@ class Model(nn.Module):
                 pt2 = (int(round(x2)), int(round(y2)))
                 if all(0 <= pt < img_np.shape[1] for pt in pt1) and all(0 <= pt < img_np.shape[0] for pt in pt1) and \
                 all(0 <= pt < img_np.shape[1] for pt in pt2) and all(0 <= pt < img_np.shape[0] for pt in pt2):
-                    cv2.line(img_np, pt1, pt2, (255, 128, 0), 2)  # 선 색은 예시 (주황)
+                    cv2.line(img_np, pt1, pt2, (255, 128, 0), 2) 
 
         return img_np
     
     def visualize_mesh_on_image(self, img_np, mesh_cam, color=(0, 255, 0)):
-        """
-        img_np: (H, W, 3) numpy array (uint8)
-        mesh_cam: (N, 3) torch.Tensor - 카메라 좌표계의 mesh vertices
-        """
-        # numpy로 변환
+       
+    
         mesh_cam_np = mesh_cam.detach().cpu().numpy()
 
-        # 3D mesh를 fisheye projection을 통해 2D로 투영
+      
         mesh_proj_2d = self.fisheye_camera.world2camera_pytorch(
             torch.from_numpy(mesh_cam_np).float().cuda()
         ).detach().cpu().numpy()  # (N, 2)
 
-        # 각 vertex를 이미지 위에 표시
+ 
         for x, y in mesh_proj_2d:
             x_int, y_int = int(round(x)), int(round(y))
             if 0 <= x_int < img_np.shape[1] and 0 <= y_int < img_np.shape[0]:
@@ -655,27 +597,17 @@ class Model(nn.Module):
         return img_np
 
     def forward(self, inputs, targets, meta_info, mode):
-        # body_img = F.interpolate(inputs['img_ori'], cfg.input_body_shape)
-        # body_img = inputs['img']
-        #     # 0. Fisheye 보정 수행
-        
-
-        # # 0.5 시각화 (선택)
-        # self.visualize_body_img_comparison(body_img, body_img_undistorted)
+       
         body_img = inputs['img_ori']
-        # set_trace()
-        # 1. Encoder
-        ## img_feat: [bs, 1280, 16, 12], task_tokens: [bs, 31, 1280]
+       
         img_feat, task_tokens = self.encoder(body_img)  # task_token:[bs, N, c]
         shape_token, cam_token, expr_token, jaw_pose_token, hand_token, body_pose_token = \
             task_tokens[:, 0], task_tokens[:, 1], task_tokens[:, 2], task_tokens[:, 3], task_tokens[:, 4:6], task_tokens[:, 6:]
 
 
-        # 1-1. ID Regressor
-
-        # person_id = self.id_regressor(id_token)
+       
         
-        # set_trace()
+       
         # 2. Body Regressor
         if not getattr(cfg, 'use_token_decoder', False):
             body_joint_hm, body_joint_img = self.body_position_net(img_feat)
@@ -685,10 +617,10 @@ class Model(nn.Module):
        
 
 
-        # set_trace()
+
         root_pose = rot6d_to_axis_angle(root_pose)
         body_pose = rot6d_to_axis_angle(body_pose.reshape(-1, 6)).reshape(body_pose.shape[0], -1)  # (N, J_R*3)
-        # set_trace()
+ 
     
         # 3. Hand and Face BBox Estimation
         lhand_bbox_center, lhand_bbox_size, rhand_bbox_center, rhand_bbox_size, face_bbox_center, face_bbox_size = self.box_net(img_feat, body_joint_hm.detach())
@@ -717,40 +649,11 @@ class Model(nn.Module):
         lhand_pose = torch.cat((lhand_pose[:, :, 0:1], -lhand_pose[:, :, 1:3]), 2).view(batch_size, -1)
         rhand_pose = hand_pose[batch_size:, :]
 
-        
-
-        # # 5. Hand regressor without ROI
-        # hand_joint_hm, hand_joint_coord_global = self.hand_position_net(img_feat)  # (B, 2J_all, 3)
-
-        # B = img_feat.size(0)
-        # J_all = self.hand_joint_num                      # 20 (keypoints/joints)
-        # J_p = len(smpl_x.orig_joint_part['lhand'])       # 보통 15 (pose parameter joints)
-
-        # # split left/right (each is (B, J_all, 3))
-        # lhand_joint_img = hand_joint_coord_global[:, :J_all, :]
-        # rhand_joint_img = hand_joint_coord_global[:, J_all:, :]
-
-        # # --- 중요: pose에 쓰는 joint만 선택 ---
-        # # 대부분 ordering이 [wrist(0), finger 15개(1~15), tips 4개(16~19)] 라서
-        # # wrist/tips 제외하고 finger 15개만 쓰면 됨.
-        # lhand_joint_img_pose = lhand_joint_img[:, 1:1+J_p, :]   # (B, J_p, 3)
-        # rhand_joint_img_pose = rhand_joint_img[:, 1:1+J_p, :]   # (B, J_p, 3)
-
-        # hand_joint_coord = torch.stack([lhand_joint_img_pose, rhand_joint_img_pose], dim=1)  # (B, 2, J_p, 3)
-
-        # token+joint -> 6D  (B, 2, J_p, 6)
-        # hand_pose_6d = self.hand_regressor(hand_token, hand_joint_coord.detach())
-
-        # 6D -> axis-angle  (B, 2, J_p, 3)
-        # hand_pose_aa = rot6d_to_axis_angle(hand_pose_6d.reshape(-1, 6)).view(B, 2, J_p, 3)
-
-        # (B, J_p*3) == (B, 45) 로 맞춰짐
-        # lhand_pose = hand_pose_aa[:, 0].reshape(B, -1)
-        # rhand_pose = hand_pose_aa[:, 1].reshape(B, -1)
+    
 
 
         # face regressor
-        # set_trace()
+      
         expr, jaw_pose = self.face_regressor(expr_token, jaw_pose_token)
         jaw_pose = rot6d_to_axis_angle(jaw_pose)
 
@@ -759,10 +662,7 @@ class Model(nn.Module):
        
     
         pose = torch.cat((root_pose, body_pose, lhand_pose, rhand_pose, jaw_pose), 1)
-        # set_trace()
-
-
-        # set_trace()
+       
         B      = body_pose.size(0)
         device = body_pose.device
         dtype  = body_pose.dtype
@@ -771,8 +671,7 @@ class Model(nn.Module):
         pose_experssion = torch.cat((body_pose, lhand_pose, rhand_pose, jaw_pose, expr_zeros), 1)
         joint_img = torch.cat((body_joint_img, lhand_joint_img, rhand_joint_img), 1)
 
-        # if mode == 'test' and 'smplx_pose' in targets:
-        #     mesh_pseudo_gt = self.generate_mesh_gt(targets, mode)
+
 
         
 
@@ -781,17 +680,12 @@ class Model(nn.Module):
 
             if mode == 'train' and getattr(self, 'id_head', None) is not None:
                 id_loss_weight = getattr(cfg, 'id_loss_weight', 1.0)
-                # img_feat: [B, C, H, W]  -> GAP로 [B, C]
+        
                 g = F.adaptive_avg_pool2d(img_feat, 1).flatten(1)
 
 
-                # GRL 통과(부호 반전 + 스케일링)
-                # g_rev = GradReverse.apply(g, self.id_adv_lambda)
-
-                # set_trace()
                 id_logits = self.id_head(g)   # [B, num_subjects]
 
-                # 타깃: 정수 인덱스 형태 권장 (DataLoader에서 meta_info['id_idx']로 전달)
                 id_idx = meta_info['id_idx'].long()                 # [B]
                 id_target = F.one_hot(id_idx, num_classes=self.num_subjects).float()  # [B, K]
                 loss['id_adv'] = self.id_loss_fn(id_logits, id_target) * id_loss_weight
@@ -809,27 +703,22 @@ class Model(nn.Module):
             smplx_shape_weight = getattr(cfg, 'smplx_loss_weight', 1.0)
 
             dposer_x_weight = getattr(cfg, 'dposer_x_weight', 1.0)
-            # smplx_orient_weight = getattr(cfg, 'smplx_orient_weight', smplx_pose_weight) # if not specified, use the same weight as pose
-    
-
-            # do not supervise root pose if original agora json is used
+           
 
 
             ###  SMPL parameter regression ###
             if getattr(cfg, 'agora_fix_global_orient_transl', False):
-                # loss['smplx_pose'] = self.param_loss(pose, targets['smplx_pose'], meta_info['smplx_pose_valid'])[:, 3:] * smplx_pose_weight
+          
                 if hasattr(cfg, 'smplx_orient_weight'):
                     smplx_orient_weight = getattr(cfg, 'smplx_orient_weight')
                     loss['smplx_orient'] = self.param_loss(pose, targets['smplx_pose'], meta_info['smplx_pose_valid'])[:, :3] * smplx_orient_weight
 
                 loss['smplx_pose'] = self.param_loss(pose, targets['smplx_pose'], meta_info['smplx_pose_valid']) * smplx_pose_weight
-                # loss['smplx_lhand_pose'] = self.param_loss(lhand_pose, targets['smplx_lhand_pose'], meta_info['smplx_pose_valid'][:, 70:116]) * smplx_pose_weight
-                # loss['smplx_lhand_pose'] = self.param_loss(lhand_pose, targets['smplx_lhand_pose'], meta_info['smplx_pose_valid'][:, 116:162]) * smplx_pose_weight
+        
 
             else:
                 loss['smplx_pose'] = self.param_loss(pose, targets['smplx_pose'], meta_info['smplx_pose_valid']) * smplx_pose_weight
-                # loss['smplx_lhand_pose'] = self.param_loss(lhand_pose, targets['smplx_lhand_pose'], meta_info['smplx_pose_valid'][:, 70:116]) * smplx_pose_weight
-                # loss['smplx_lhand_pose'] = self.param_loss(lhand_pose, targets['smplx_lhand_pose'], meta_info['smplx_pose_valid'][:, 116:162]) * smplx_pose_weight
+               
 
 
             loss['smplx_shape'] = self.param_loss(shape, targets['smplx_shape'],
@@ -837,20 +726,13 @@ class Model(nn.Module):
             loss['smplx_expr'] = self.param_loss(expr, targets['smplx_expr'], meta_info['smplx_expr_valid'][:, None])
 
             loss['dposerx'] = self.dposer_x(pose_experssion) * dposer_x_weight
-            # supervision for keypoints3d wo/ ra
-            # loss['joint_cam'] = self.coord_loss(joint_cam_wo_ra, targets['joint_cam'], meta_info['joint_valid'] * meta_info['is_3D'][:, None, None]) * smplx_kps_3d_weight
-            # supervision for keypoints3d w/ ra
+        
 
 
             loss['smplx_joint_cam'] = self.coord_loss(joint_cam, targets['smplx_joint_cam'], meta_info['smplx_joint_valid']) * smplx_kps_3d_weight
 
 
-            # loss['bone_length'] = self.compute_bone_length_loss(
-            #     joint_cam[:, [mo2cap2_to_smplx[name] for name in mo2cap2_joint_names], :],
-            #     targets['smplx_joint_cam'][:, [mo2cap2_to_smplx[name] for name in mo2cap2_joint_names], :],
-            #     bone_pairs,
-            #     weight=bone_loss_weight
-            # )
+         
             if not (meta_info['lhand_bbox_valid'] == 0).all():
                 loss['lhand_bbox'] = (self.coord_loss(lhand_bbox_center, targets['lhand_bbox_center'], meta_info['lhand_bbox_valid'][:, None]) +
                                     self.coord_loss(lhand_bbox_size, targets['lhand_bbox_size'], meta_info['lhand_bbox_valid'][:, None]))
@@ -861,11 +743,10 @@ class Model(nn.Module):
                 loss['face_bbox'] = (self.coord_loss(face_bbox_center, targets['face_bbox_center'], meta_info['face_bbox_valid'][:, None]) +
                                  self.coord_loss(face_bbox_size, targets['face_bbox_size'], meta_info['face_bbox_valid'][:, None]))
             
-            # if (meta_info['face_bbox_valid'] == 0).all():
-            #     out = {}
+           
             targets['original_joint_img'] = targets['joint_img'].clone()
             targets['original_smplx_joint_img'] = targets['smplx_joint_img'].clone()
-            # out['original_joint_proj'] = joint_proj.clone()
+         
             if not (meta_info['lhand_bbox_valid'] + meta_info['rhand_bbox_valid'] == 0).all():
 
                 # change hand target joint_img and joint_trunc according to hand bbox (cfg.output_hm_shape -> downsampled hand bbox space)
@@ -939,19 +820,14 @@ class Model(nn.Module):
                 coord = coord + trans  # global translation alignment
                 joint_proj = torch.cat((joint_proj[:, :smpl_x.joint_part['face'][0], :], coord,
                                         joint_proj[:, smpl_x.joint_part['face'][-1] + 1:, :]), 1)
-           # print("joint_proj:", joint_proj.shape)
-           # print("coord_gt  :", targets['joint_img'][:, :, :2].shape)
-           # print("valid     :", meta_info['joint_trunc'].shape)
-            # set_trace()
+          
 
 
             loss['joint_proj'] = self.coord_loss(joint_proj, targets['smplx_joint_img'][:, :, :2], meta_info['smplx_joint_trunc']) * smplx_kps_2d_weight
             
 
 
-            # loss['joint_img'] = self.coord_loss(joint_img, smpl_x.reduce_joint_set(targets['joint_img']),
-            #                                     smpl_x.reduce_joint_set(meta_info['joint_trunc']), meta_info['is_3D']) * net_kps_2d_weight
-            # set_trace()
+         
 
             # PositionNet
             loss['smplx_joint_img'] = self.coord_loss(joint_img, smpl_x.reduce_joint_set(targets['smplx_joint_img']),
@@ -973,7 +849,7 @@ class Model(nn.Module):
                     if 'img_path' in meta_info:
                         img_path_i = meta_info['img_path'][i]
 
-                    # dataset/.../{subject}/{scene}/imgs/... 에서 subject/scene 뽑기
+                
                     sub_rel = self._get_subject_scene_dir(img_path_i) if isinstance(img_path_i, str) else ""
 
                     if sub_rel:
@@ -1023,33 +899,11 @@ class Model(nn.Module):
                     hand_bbox_dir, meta_info
                 )
 
-           #  for i in range(B):
-                # set_trace()
-                # img_np = inputs['img_vis'][i].detach().cpu().numpy()  # [H, W, C]
-                # img_np = np.clip(img_np, 0, 1) * 255.0
-                # img_np = img_np.astype(np.uint8).copy()
-
-                # selected_joint_indices = list(mo2cap2_to_smplx.values()) 
-                # joints_2d = joint_proj[i][selected_joint_indices].detach().cpu().numpy()  # [N_valid, 2]
-                # for x, y in joints_2d:
-                #     x_int, y_int = int(round(x)), int(round(y))
-                #     if 0 <= x_int < img_np.shape[1] and 0 <= y_int < img_np.shape[0]:
-                #         cv2.circle(img_np, (x_int, y_int), 3, (0, 255, 0), -1)
-
-                # joint 시각화
-                # img_np = self.draw_joint_lines(img_np, joints_2d, mo2cap2_joint_names, mo2cap2_chain)
-
-                # mesh 시각화
-                # img_np = self.visualize_mesh_on_image(img_np, mesh_cam[i])
-
-
-                # save_path = os.path.join(save_dir, f'proj_{i:03d}.png')
-                # cv2.imwrite(save_path, img_np[:, :, ::-1])
+          
 
             # test output
             out = {}
             out['img'] = inputs['img_ori']
-            # out['img_vis'] = inputs['img_vis']
             out['joint_img'] = joint_img
 
             out['smplx_joint_proj'] = joint_proj
@@ -1061,18 +915,13 @@ class Model(nn.Module):
             out['smplx_jaw_pose'] = jaw_pose
             out['smplx_shape'] = shape
             out['smplx_expr'] = expr
-            # out['cam_trans'] = cam_trans
-            # out['lhand_bbox'] = lhand_bbox
-            # out['rhand_bbox'] = rhand_bbox
-            # out['face_bbox'] = face_bbox
+          
             if 'smplx_shape' in targets:
                 out['smplx_shape_target'] = targets['smplx_shape']
             if 'img_path' in meta_info:
                 out['img_path'] = meta_info['img_path']
             if 'smplx_joint_cam' in targets:
                 out['gt_joint'] = targets['smplx_joint_cam']
-            # if 'smplx_pose' in targets:
-            #     out['smplx_mesh_cam_pseudo_gt'] = mesh_pseudo_gt
             if 'smplx_joint_img' in targets:
                 out['smplx_joint_img'] = targets['smplx_joint_img']
             if 'smplx_mesh_cam' in targets:
@@ -1103,7 +952,7 @@ def init_weights(m):
         pass
 
 def reinit_cam_out(m):
-    """cam_out만 랜덤 초기화"""
+
     if isinstance(m, nn.Linear):
         nn.init.normal_(m.weight, std=0.01)
         nn.init.constant_(m.bias, 0)
@@ -1121,10 +970,6 @@ def get_model(mode):
     box_net = BoxNet(feat_dim=cfg.feat_dim)
 
     # hand
-
-    ## no-ROI
-    # hand_position_net = GlobalHandPositionNet(feat_dim = cfg.feat_dim)
-    # hand_rotation_net = HandTokenRegressor()
 
     hand_position_net = PositionNet('hand', feat_dim=cfg.feat_dim)
     hand_roi_net = HandRoI(feat_dim=cfg.feat_dim, upscale=cfg.upscale)
@@ -1153,7 +998,6 @@ def get_model(mode):
             
             box_net.apply(init_weights)
 
-     
 
             # hand
             hand_position_net.apply(init_weights)
