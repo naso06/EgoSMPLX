@@ -152,8 +152,8 @@ export PYTHONPATH=$(pwd)/..:$PYTHONPATH
 python test.py \
     --num_gpus 1 \
     --exp_name output/egowholebody_result \
-    --result_path /media/cv1/data/output/train_ft_egopw_all_w_smpl_3d_2d_postionnet_loss_no_aug_no_bbox_undistort_patch_dposerx_body_0.1_0.01_w0.1\
-    --ckpt_idx 4\
+    --result_path /media/cv1/data/output/train_smpler_x_b32_20260202_135554\
+    --ckpt_idx 3\
     --testset  EgoWholeBody_Test\
     --agora_benchmark agora_model_val \
     --vis \

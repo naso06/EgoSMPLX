@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from nets.smpler_x import PositionNet, HandRotationNet, FaceRegressor, BoxNet, HandRoI, BodyRotationNet, BodyTokenNet, GlobalHandPositionNet, HandTokenRegressor
-from tokenhmr.lib.models.heads.token_head import SMPLTokenDecoderHead
+from nets.smpler_x import PositionNet, HandRotationNet, FaceRegressor, BoxNet, HandRoI, BodyRotationNet, GlobalHandPositionNet, HandTokenRegressor
+# from tokenhmr.lib.models.heads.token_head import SMPLTokenDecoderHead
 from nets.loss import CoordLoss, ParamLoss, CELoss
 from utils.human_models import smpl_x, smpl
 from utils.transforms import rot6d_to_axis_angle, restore_bbox
@@ -81,7 +81,7 @@ mo2cap2_chain = [
 
 
 class Model(nn.Module):
-    def __init__(self, encoder, token_decoder, body_position_net, body_rotation_net, box_net, hand_position_net, hand_roi_net,
+    def __init__(self, encoder, body_position_net, body_rotation_net, box_net, hand_position_net, hand_roi_net,
                  hand_rotation_net, face_regressor, mode):
         super(Model, self).__init__()
 
@@ -115,70 +115,50 @@ class Model(nn.Module):
         self.hand_joint_num = len(smpl_x.pos_joint_part['rhand'])
 
         self.body_position_net = body_position_net
-        if getattr(cfg, 'use_token_decoder', False):
-            if getattr(cfg, 'use_smpl', False):
-                self.token_decoder = token_decoder
-                
+        
 
-                self.head = [self.token_decoder, self.body_position_net,
-                        self.hand_position_net, self.hand_regressor, 
-                        self.face_regressor]
-
-                self.trainable_modules = [self.encoder, self.token_decoder, self.body_position_net]
+       
+        if getattr(cfg, 'use_smpl', False):
+            
+            self.body_regressor = body_rotation_net
+            self.head = [self.body_position_net, self.body_regressor,
+                    self.hand_position_net, self.hand_regressor, 
+                    self.face_regressor]
+            
+            if getattr(cfg, 'use_dposerx', False):
+                if mode == 'train':
+                    self.dposer_x = DPoser(batch_size=cfg.train_batch_size, config_path=cfg.dposerx_cfg_path).cuda()
+                    self.trainable_modules = [self.encoder, self.dposer_x, self.body_position_net, self.body_regressor]
+                    #self.trainable_modules = [self.encoder, self.body_position_net, self.body_regressor]
+                else:
+                    self.dposer_x = DPoser(batch_size=cfg.test_batch_size, config_path=cfg.dposerx_cfg_path).cuda()
+            
             else:
-                self.token_decoder = token_decoder
-                
-
-                self.head = [self.token_decoder, self.body_position_net,
-                        self.hand_position_net, self.hand_regressor, 
-                        self.face_regressor]
-
-                self.trainable_modules = [self.encoder, self.token_decoder, self.body_position_net,
-                                        self.box_net, self.hand_position_net,
-                                        self.hand_roi_net, self.hand_regressor, self.face_regressor]
+                self.trainable_modules = [self.encoder, self.body_position_net, self.body_regressor]
 
         else:
-            if getattr(cfg, 'use_smpl', False):
-                
-                self.body_regressor = body_rotation_net
-                self.head = [self.body_position_net, self.body_regressor,
-                        self.hand_position_net, self.hand_regressor, 
-                        self.face_regressor]
-                
-                if getattr(cfg, 'use_dposerx', False):
-                    if mode == 'train':
-                        self.dposer_x = DPoser(batch_size=cfg.train_batch_size, config_path=cfg.dposerx_cfg_path).cuda()
-                        self.trainable_modules = [self.encoder, self.dposer_x, self.body_position_net, self.body_regressor]
-                        #self.trainable_modules = [self.encoder, self.body_position_net, self.body_regressor]
-                    else:
-                        self.dposer_x = DPoser(batch_size=cfg.test_batch_size, config_path=cfg.dposerx_cfg_path).cuda()
+            
+            self.body_regressor = body_rotation_net
+            self.head = [self.body_position_net, self.body_regressor,
+                    self.hand_position_net, self.hand_regressor, 
+                    self.face_regressor]
+
+            if getattr(cfg, 'use_dposerx', False):
+                if mode == 'train':
+                    self.dposer_x = DPoser(batch_size=cfg.train_batch_size, config_path=cfg.dposerx_cfg_path).cuda()
+
+                    self.trainable_modules = [self.encoder, self.dposer_x, self.body_position_net, self.body_regressor, 
+                                    self.box_net, self.hand_position_net,
+                                    self.hand_roi_net, self.hand_regressor]
                 
                 else:
-                    self.trainable_modules = [self.encoder, self.body_position_net, self.body_regressor]
-
+                    self.dposer_x = DPoser(batch_size=cfg.test_batch_size, config_path=cfg.dposerx_cfg_path).cuda()
+            
             else:
+                self.trainable_modules = [self.encoder, self.body_position_net, self.body_regressor, 
+                                    self.box_net, self.hand_position_net,
+                                    self.hand_roi_net, self.hand_regressor, self.face_regressor]
                 
-                self.body_regressor = body_rotation_net
-                self.head = [self.body_position_net, self.body_regressor,
-                        self.hand_position_net, self.hand_regressor, 
-                        self.face_regressor]
-
-                if getattr(cfg, 'use_dposerx', False):
-                    if mode == 'train':
-                        self.dposer_x = DPoser(batch_size=cfg.train_batch_size, config_path=cfg.dposerx_cfg_path).cuda()
-
-                        self.trainable_modules = [self.encoder, self.dposer_x, self.body_position_net, self.body_regressor, 
-                                        self.box_net, self.hand_position_net,
-                                        self.hand_roi_net, self.hand_regressor]
-                    
-                    else:
-                        self.dposer_x = DPoser(batch_size=cfg.test_batch_size, config_path=cfg.dposerx_cfg_path).cuda()
-                
-                else:
-                    self.trainable_modules = [self.encoder, self.body_position_net, self.body_regressor, 
-                                        self.box_net, self.hand_position_net,
-                                        self.hand_roi_net, self.hand_regressor, self.face_regressor]
-                    
                            
         self.special_trainable_modules = []
         
@@ -702,15 +682,7 @@ class Model(nn.Module):
             root_pose, body_pose, shape, cam_param, = self.body_regressor(body_pose_token, shape_token, cam_token, body_joint_img.detach())
             
 
-        else:
-            body_joint_hm, body_joint_img = self.body_position_net(img_feat)
-            # set_trace()
-            smpl_param = self.token_decoder(img_feat)
-            # set_trace()
-            root_pose = smpl_param['root_pose']
-            body_pose = smpl_param['body_pose']
-            shape = smpl_param['betas']
-            cam_param = smpl_param['cam_param']
+       
 
 
         # set_trace()
@@ -1143,12 +1115,7 @@ def get_model(mode):
     vit_cfg = Config.fromfile(cfg.encoder_config_file)
     vit = build_posenet(vit_cfg.model)
 
-    token_decoder = None
-    if getattr(cfg, 'use_token_decoder', False):
-        token_cfg_path = cfg.token_cfg
-        token_cfg = OmegaConf.load(token_cfg_path)
-        token_decoder = SMPLTokenDecoderHead(token_cfg)
-
+   
     body_position_net = PositionNet('body', feat_dim=cfg.feat_dim)
     body_rotation_net = BodyRotationNet(feat_dim=cfg.feat_dim)
     box_net = BoxNet(feat_dim=cfg.feat_dim)
@@ -1186,12 +1153,7 @@ def get_model(mode):
             
             box_net.apply(init_weights)
 
-            # if getattr(cfg, 'use_token_decoder', False):
-            #     set_trace()
-            #     for name, child in token_decoder.named_children():
-            #         if name == 'tokenizer':
-            #             continue
-            #         child.apply(init_weights)
+     
 
             # hand
             hand_position_net.apply(init_weights)
@@ -1205,7 +1167,7 @@ def get_model(mode):
 
     encoder = vit.backbone
 
-    model = Model(encoder, token_decoder, body_position_net, body_rotation_net, box_net, hand_position_net, hand_roi_net, hand_rotation_net,
+    model = Model(encoder, body_position_net, body_rotation_net, box_net, hand_position_net, hand_roi_net, hand_rotation_net,
                   face_regressor, mode)
   
     return model
