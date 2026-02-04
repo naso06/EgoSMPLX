@@ -28,3 +28,4 @@ data/eval_saved_param_egowholebody.py
 data/eval_saved_param.py
 main/local_train.sh
 main/slurm_train.sh
+main/train.py
