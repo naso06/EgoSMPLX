@@ -1002,7 +1002,7 @@ class HumanDataset(torch.utils.data.Dataset):
         img, img2bb_trans, bb2img_trans, rot, do_flip = augmentation(img_ori, bbox, self.data_split)
        
 
-        # ###Egocentric image의 입력
+      
         crop_left = 128
         crop_right = 128
         img_ori = img_ori[:, crop_left:img_ori.shape[1] - crop_right, :]
@@ -1166,9 +1166,6 @@ class HumanDataset(torch.utils.data.Dataset):
             if not dummy_cord:
                 joint_img[:, 2] = (joint_img[:, 2] / (cfg.body_3d_size / 2) + 1) / 2. * cfg.output_hm_shape[0]  # discretize depth
 
-            # joint_img, joint_cam, joint_cam_ra, joint_valid, joint_trunc = process_db_coord(
-            #     joint_img, joint_cam, data['joint_valid'], do_flip, img_shape,
-            #     self.joint_set['flip_pairs'], img2bb_trans, rot, self.joint_set['joints_name'], smpl_x.joints_name)
 
             smplx_param = data['smplx_param']
 
@@ -1181,29 +1178,7 @@ class HumanDataset(torch.utils.data.Dataset):
             smplx_joint_img = np.concatenate((smplx_joint_img[:, :2], smplx_joint_cam[:, 2:]), 1)
             smplx_joint_img[:, 2] = (smplx_joint_img[:, 2] / (cfg.body_3d_size / 2) + 1) / 2. * cfg.output_hm_shape[0]
 
-            # smplx coordinates and parameters
-            # smplx_param = data['smplx_param']
-            # smplx_cam_trans = np.array(smplx_param['trans']) if 'trans' in smplx_param else None
-            # smplx_joint_img, smplx_joint_cam, smplx_joint_trunc, smplx_pose, smplx_shape, smplx_expr, \
-            # smplx_pose_valid, smplx_joint_valid, smplx_expr_valid, smplx_mesh_cam_orig = process_human_model_output(
-            #     smplx_param, self.cam_param, do_flip, img_shape, img2bb_trans, rot, 'smplx',
-            #     joint_img=None if self.cam_param else joint_img
-            #     )  # if cam not provided, we take joint_img as smplx joint 2d, which is commonly the case for our processed humandata ####
-
-            # inputs = {'img': img,
-            #            'img_ori': img_ori}
-            # targets = {}
-            # # targets = {'smplx_joint_img': smplx_joint_img, ####
-            #           # 'smplx_pose': smplx_pose,
-            #           # 'smplx_shape': smplx_shape,
-            #           #  'smplx_expr': smplx_expr,
-            #           #  'smplx_cam_trans': smplx_cam_trans,
-            #           # } ####
-            # meta_info = {'img_path': img_path,
-            #              'joint_cam': joint_cam,
-            #              'bb2img_trans': bb2img_trans, ####
-            # #             'gt_smplx_transl':smplx_cam_trans ####
-            #             }
+            
 
             inputs = { 'img_ori': img_ori}
             targets = {'joint_img': joint_img, # keypoints2d
@@ -1322,22 +1297,21 @@ class HumanDataset(torch.utils.data.Dataset):
             'mpvpe_all': [], 'mpvpe_l_hand': [], 'mpvpe_r_hand': [], 'mpvpe_hand': [], 'mpvpe_face': [], 'mpvpe_body': [],
             'pa_mpjpe_body': [], 'pa_mpjpe_l_hand': [], 'pa_mpjpe_r_hand': [], 'pa_mpjpe_hand': [],
             'pa_mpjpe_right_arm': [], 'pa_mpjpe_left_arm': [], 'pa_mpjpe_right_leg': [], 'pa_mpjpe_left_leg': [], 'pa_mpjpe_all': [],
-            # 추가: 손 포함 body+hands
+         
             'pa_mpjpe_body_hands': [], 'mpjpe_body': [], 'mpjpe_l_hand': [], 'mpjpe_r_hand': [], 'mpjpe_hand': [], 'mpjpe_all': []
-            # 이미 쓰는 포지션넷 비교가 있으면 유지
+           
             # 'pa_mpjpe_body_pos': [],
         }
 
         eval_result.update({
-            # 손만 (15개/hand, 1~3만 사용)
+            
             'pa_mpjpe_l_hand_15': [],
             'pa_mpjpe_r_hand_15': [],
             'pa_mpjpe_hand_30': [],
 
-            # 손 포함 (body 15 + hands 30)  ※ body는 네가 이미 쓰는 mo2cap2 15개 기준
+            
             'pa_mpjpe_body_hands_45': [],
 
-            # (선택) tip(4) 외삽해서 20개/hand로 계산
             'pa_mpjpe_l_hand_20_extrap': [],
             'pa_mpjpe_r_hand_20_extrap': [],
             'pa_mpjpe_hand_40_extrap': [],
@@ -1355,7 +1329,7 @@ class HumanDataset(torch.utils.data.Dataset):
         for n in range(sample_num):
             out = outs[n]
             mesh_gt = out['smplx_mesh_cam_target']
-            # set_trace()
+         
             mesh_out = out['smplx_mesh_cam']
 
 
@@ -1410,7 +1384,7 @@ class HumanDataset(torch.utils.data.Dataset):
                 np.sqrt(np.sum((mesh_out_face_align - mesh_gt_face) ** 2, 1)).mean() * 1000)
 
             
-            # set_trace()
+       
 
             # MPJPE from body joints
 
@@ -1419,9 +1393,7 @@ class HumanDataset(torch.utils.data.Dataset):
                                              :]
             joint_gt_all = np.dot(smpl_x.J_regressor, mesh_gt)
             joint_out_all = np.dot(smpl_x.J_regressor, mesh_out_pelvis_align)
-            # joint_out_all = joint_out_all - np.dot(smpl_x.J_regressor, mesh_out)[smpl_x.J_regressor_idx['pelvis'], None,
-            #                             :] + np.dot(smpl_x.J_regressor, mesh_gt)[smpl_x.J_regressor_idx['pelvis'], None,
-            #                                  :]
+   
             
             eval_result['mpjpe_body'].append(
                 np.sqrt(np.sum((joint_out_all - joint_gt_all) ** 2, 1)).mean() * 1000)
@@ -1458,26 +1430,26 @@ class HumanDataset(torch.utils.data.Dataset):
                 np.sum((joint_out_rhand_align - joint_gt_rhand) ** 2, 1)).mean() * 1000) / 2.)
 
 
-            # === (evaluate 내부) 2D 시각화 옵션 ===
+         
             VIS_2D = getattr(cfg, "vis_2d_pose", False)
             VIS_2D_ROOT = os.path.join(cfg.vis_dir, "pose2d_overlay")
 
             if VIS_2D:
                 print("[VIS2D] entered VIS_2D block, n=", n)
-                # set_trace()
+              
                 # 0) img path
                 img_path = out['img_path']
 
-                # (중요) img_path가 상대경로일 수 있으니 보정
+               
                 if isinstance(img_path, str) and (not os.path.exists(img_path)):
-                    # self.img_dir가 있으면 붙여보기
+                   
                     if getattr(self, "img_dir", None):
                         cand = os.path.join(self.img_dir, img_path)
                         if os.path.exists(cand):
                             img_path = cand
 
                 if not (isinstance(img_path, str) and os.path.exists(img_path)):
-                    # 최초 1회만 원인 출력
+                  
                     if n == 0:
                         print("[VIS2D] img_path invalid:", img_path)
                         print("[VIS2D] out keys:", list(out.keys())[:50], "...")
@@ -1492,7 +1464,7 @@ class HumanDataset(torch.utils.data.Dataset):
                     else:
                         H_img, W_img = img_bgr.shape[:2]
 
-                        # 1) GT / Pred 2D (fallback 키들)
+                       
                         gt2d = out["smplx_joint_img"][:, :2]
                         pred2d = out["smplx_joint_proj"]
 
@@ -1509,24 +1481,18 @@ class HumanDataset(torch.utils.data.Dataset):
                         gt_xy = maybe_scale_from_hm_to_img(gt2d, W_img, H_img, hm_w, hm_h)
                         pr_xy = maybe_scale_from_hm_to_img(pred2d, W_img, H_img, hm_w, hm_h)
 
-                        # bb2img_trans = out.get("bb2img_trans", None)
-                        # if bb2img_trans is not None:
-                        #     bb2img_trans = np.asarray(bb2img_trans, dtype=np.float32).reshape(3, 3)
-                        #     gt_xy = _apply_homography_xy(gt_xy, bb2img_trans)
-                        #     pr_xy = _apply_homography_xy(pr_xy, bb2img_trans)
+                     
 
                         valid_gt = None
                         valid_pr = None
 
-                        # body(0~24)에서 ear/eye/nose 제거
                         DROP_BODY_FACE = {20, 21, 22, 23, 24}
 
-                        body_wo_face = [i for i in range(25) if i not in DROP_BODY_FACE]  # 0~24 중 얼굴 제외
-                        hands = list(range(25, 65))  # 25~64 (양손)
+                        body_wo_face = [i for i in range(25) if i not in DROP_BODY_FACE] 
+                        hands = list(range(25, 65)) 
 
                         subset_idx = np.array(body_wo_face + hands, dtype=np.int32)
 
-                        # subset_idx = np.arange(BODY_HANDS_NUM)  # 0~64
                         overlay = draw_2d_pose_overlay(
                             img_bgr,
                             joints_gt=gt_xy,
@@ -1553,7 +1519,7 @@ class HumanDataset(torch.utils.data.Dataset):
                         os.makedirs(save_dir, exist_ok=True)
 
                         base = os.path.splitext(os.path.basename(img_path))[0]
-                        vis_idx = self.save_idx  # npz랑 동일 idx 쓰고 싶으면
+                        vis_idx = self.save_idx  
 
                         save_path = os.path.join(save_dir, f"{base}_{vis_idx:06d}.jpg")
                         ok = cv2.imwrite(save_path, overlay)
@@ -1578,7 +1544,7 @@ class HumanDataset(torch.utils.data.Dataset):
                 else:
                     rel_img_path = base
 
-                # 데이터셋 경로에서 {subject}/{scene} 부분만 추출
+             
                 subject_scene_dir = self._get_subject_scene_dir(img_path)
 
                 if subject_scene_dir:
@@ -1598,7 +1564,6 @@ class HumanDataset(torch.utils.data.Dataset):
                 smplx_pred['reye_pose'] = np.zeros((1, 3))
                 smplx_pred['betas'] = out['smplx_shape'].reshape(-1,10)
                 smplx_pred['expression'] = out['smplx_expr'].reshape(-1,10)
-                # smplx_pred['transl'] =  out['gt_smplx_transl'].reshape(-1,3)
                 smplx_pred['img_path'] = rel_img_path
 
                 npz_path = os.path.join(npz_dir, f'{base}_{self.save_idx:06d}.npz')
@@ -1608,8 +1573,7 @@ class HumanDataset(torch.utils.data.Dataset):
                 except Exception:
                     pass
 
-                # save img path and error
-                # 위에서 계산된 값들 중 hand pa mpvpe
+             
                 pa_mpvpe_hand_cur = eval_result['pa_mpvpe_hand'][-1]   # 방금 append된 값
                 pa_mpvpe_lhand_cur = eval_result['pa_mpvpe_l_hand'][-1]
                 pa_mpvpe_rhand_cur = eval_result['pa_mpvpe_r_hand'][-1]
@@ -1638,31 +1602,21 @@ class HumanDataset(torch.utils.data.Dataset):
         print('PA MPVPE (L-Hands): %.2f mm' % np.mean(eval_result['pa_mpvpe_l_hand']))
         print('PA MPVPE (R-Hands): %.2f mm' % np.mean(eval_result['pa_mpvpe_r_hand']))
         print('PA MPVPE (Hands): %.2f mm' % np.mean(eval_result['pa_mpvpe_hand']))
-        # print('PA MPVPE (Face): %.2f mm' % np.mean(eval_result['pa_mpvpe_face']))
+   
         print()
 
         print('MPVPE (All): %.2f mm' % np.mean(eval_result['mpvpe_all']))
         print('MPVPE (L-Hands): %.2f mm' % np.mean(eval_result['mpvpe_l_hand']))
         print('MPVPE (R-Hands): %.2f mm' % np.mean(eval_result['mpvpe_r_hand']))
         print('MPVPE (Hands): %.2f mm' % np.mean(eval_result['mpvpe_hand']))
-        # print('MPVPE (Face): %.2f mm' % np.mean(eval_result['mpvpe_face']))
+ 
         print()
 
         print('MPJPE (Body): %.2f mm' % np.mean(eval_result['mpjpe_body']))
 
         print('PA MPJPE (Body): %.2f mm' % np.mean(eval_result['pa_mpjpe_body']))
         
-        # print('PA MPJPE (PositionNet Body): %.2f mm' % np.mean(eval_result['pa_mpjpe_body_pos']))
-        # print('PA MPJPE (Left Arm): %.2f mm' % np.mean(eval_result['pa_mpjpe_left_arm']))
-        # print('PA MPJPE (Right Arm): %.2f mm' % np.mean(eval_result['pa_mpjpe_right_arm']))
-        # print('PA MPJPE (Left Leg): %.2f mm' % np.mean(eval_result['pa_mpjpe_left_leg']))
-        # print('PA MPJPE (Right Leg): %.2f mm' % np.mean(eval_result['pa_mpjpe_right_leg']))
-
-        # print('PA MPJPE (L-Hand 15): %.2f mm' % np.mean(eval_result['pa_mpjpe_l_hand_15']))
-        # print('PA MPJPE (R-Hand 15): %.2f mm' % np.mean(eval_result['pa_mpjpe_r_hand_15']))
-        # print('PA MPJPE (Hands 30): %.2f mm' % np.mean(eval_result['pa_mpjpe_hand_30']))
-        # print('PA MPJPE (Body+Hands 45): %.2f mm' % np.mean(eval_result['pa_mpjpe_body_hands_45']))
-
+     
     
         print('MPJPE (L-Hands): %.2f mm' % np.mean(eval_result['mpjpe_l_hand']))
         print('MPJPE (R-Hands): %.2f mm' % np.mean(eval_result['mpjpe_r_hand']))
@@ -1672,46 +1626,6 @@ class HumanDataset(torch.utils.data.Dataset):
         print('PA MPJPE (L-Hands): %.2f mm' % np.mean(eval_result['pa_mpjpe_l_hand']))
         print('PA MPJPE (R-Hands): %.2f mm' % np.mean(eval_result['pa_mpjpe_r_hand']))
         print('PA MPJPE (Hands): %.2f mm' % np.mean(eval_result['pa_mpjpe_hand']))
-
-        # print()
-        # print(f"{np.mean(eval_result['pa_mpvpe_all'])},{np.mean(eval_result['pa_mpvpe_l_hand'])},{np.mean(eval_result['pa_mpvpe_r_hand'])},{np.mean(eval_result['pa_mpvpe_hand'])},{np.mean(eval_result['pa_mpvpe_face'])},"
-        # f"{np.mean(eval_result['mpvpe_all'])},{np.mean(eval_result['mpvpe_l_hand'])},{np.mean(eval_result['mpvpe_r_hand'])},{np.mean(eval_result['mpvpe_hand'])},{np.mean(eval_result['mpvpe_face'])},"
-        # f"{np.mean(eval_result['pa_mpjpe_body'])},{np.mean(eval_result['pa_mpjpe_l_hand'])},{np.mean(eval_result['pa_mpjpe_r_hand'])},{np.mean(eval_result['pa_mpjpe_hand'])}")
-        # print()
-
-
-        # f = open(os.path.join(cfg.result_dir, 'result.txt'), 'w')
-        # f.write(f'{cfg.testset} dataset \n')
-        # f.write('PA MPVPE (All): %.2f mm\n' % np.mean(eval_result['pa_mpvpe_all']))
-        # f.write('PA MPVPE (L-Hands): %.2f mm' % np.mean(eval_result['pa_mpvpe_l_hand']))
-        # f.write('PA MPVPE (R-Hands): %.2f mm' % np.mean(eval_result['pa_mpvpe_r_hand']))
-        # f.write('PA MPVPE (Hands): %.2f mm\n' % np.mean(eval_result['pa_mpvpe_hand']))
-        # f.write('PA MPVPE (Face): %.2f mm\n' % np.mean(eval_result['pa_mpvpe_face']))
-        # f.write('MPVPE (All): %.2f mm\n' % np.mean(eval_result['mpvpe_all']))
-        # f.write('MPVPE (L-Hands): %.2f mm' % np.mean(eval_result['mpvpe_l_hand']))
-        # f.write('MPVPE (R-Hands): %.2f mm' % np.mean(eval_result['mpvpe_r_hand']))
-        # f.write('MPVPE (Hands): %.2f mm' % np.mean(eval_result['mpvpe_hand']))
-        # f.write('MPVPE (Face): %.2f mm\n' % np.mean(eval_result['mpvpe_face']))
-        # f.write('PA MPJPE (Body): %.2f mm\n' % np.mean(eval_result['pa_mpjpe_body']))
-        # f.write('PA MPJPE (L-Hands): %.2f mm' % np.mean(eval_result['pa_mpjpe_l_hand']))
-        # f.write('PA MPJPE (R-Hands): %.2f mm' % np.mean(eval_result['pa_mpjpe_r_hand']))
-        # f.write('PA MPJPE (Hands): %.2f mm\n' % np.mean(eval_result['pa_mpjpe_hand']))
-        # f.write(f"{np.mean(eval_result['pa_mpvpe_all'])},{np.mean(eval_result['pa_mpvpe_l_hand'])},{np.mean(eval_result['pa_mpvpe_r_hand'])},{np.mean(eval_result['pa_mpvpe_hand'])},{np.mean(eval_result['pa_mpvpe_face'])},"
-        # f"{np.mean(eval_result['mpvpe_all'])},{np.mean(eval_result['mpvpe_l_hand'])},{np.mean(eval_result['mpvpe_r_hand'])},{np.mean(eval_result['mpvpe_hand'])},{np.mean(eval_result['mpvpe_face'])},"
-        # f"{np.mean(eval_result['pa_mpjpe_body'])},{np.mean(eval_result['pa_mpjpe_l_hand'])},{np.mean(eval_result['pa_mpjpe_r_hand'])},{np.mean(eval_result['pa_mpjpe_hand'])}")
-
-        # if getattr(cfg, 'eval_on_train', False):
-        #     import csv
-        #     csv_file = f'{cfg.root_dir}/output/{cfg.testset}_eval_on_train.csv'
-        #     exp_id = cfg.exp_name.split('_')[1]
-        #     new_line = [exp_id,np.mean(eval_result['pa_mpvpe_all']),np.mean(eval_result['pa_mpvpe_l_hand']),np.mean(eval_result['pa_mpvpe_r_hand']),np.mean(eval_result['pa_mpvpe_hand']),np.mean(eval_result['pa_mpvpe_face']),
-        #                 np.mean(eval_result['mpvpe_all']),np.mean(eval_result['mpvpe_l_hand']),np.mean(eval_result['mpvpe_r_hand']),np.mean(eval_result['mpvpe_hand']),np.mean(eval_result['mpvpe_face']),
-        #                 np.mean(eval_result['pa_mpjpe_body']),np.mean(eval_result['pa_mpjpe_l_hand']),np.mean(eval_result['pa_mpjpe_r_hand']),np.mean(eval_result['pa_mpjpe_hand'])]
-
-        #     # Append the new line to the CSV file
-        #     with open(csv_file, 'a', newline='') as file:
-        #         writer = csv.writer(file)
-        #         writer.writerow(new_line)
 
     def decompress_keypoints(self, humandata) -> None:
         """If a key contains 'keypoints', and f'{key}_mask' is in self.keys(),

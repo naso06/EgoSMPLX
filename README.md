@@ -16,36 +16,7 @@ Use the following config file for training:
 
 When running training on a server, pass this file as `<CONFIG_FILE>`.
 
-## Training
 
-### Local training
-
-Run the local training script:
-
-```bash
-bash local_train.sh
-```
-
-This is useful for quick checks and debugging in a local environment.
-
-### Server training (SLURM)
-
-To train on a SLURM cluster, run:
-
-```bash
-sh slurm_train.sh <JOB_NAME> <NUM_GPU> <CONFIG_FILE>
-```
-
-**Arguments**
-
-- `<JOB_NAME>`: SLURM job name (e.g., `exp01`)
-- `<NUM_GPU>`: number of GPUs to use (e.g., `1`, `4`, `8`)
-- `<CONFIG_FILE>`: path to the config file (e.g., `config_ft_pesudogt.py`)
-
-**Example**
-
-```bash
-sh slurm_train.sh exp01 4 config_ft_pesudogt.py
 ```
 
 ## Testing (SLURM)

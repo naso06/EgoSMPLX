@@ -900,7 +900,7 @@ class Model(nn.Module):
                 )
 
           
-
+            shape_mean = torch.zeros_like(shape)
             # test output
             out = {}
             out['img'] = inputs['img_ori']
