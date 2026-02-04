@@ -17,7 +17,6 @@ Use the following config file for training:
 When running training on a server, pass this file as `<CONFIG_FILE>`.
 
 
-```
 
 ## Testing (SLURM)
 
