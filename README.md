@@ -1,12 +1,13 @@
 # Egocentric Whole-body Human Mesh Recovery with Prior-guided Learning 
 <p align="center">
-  <span style="display:inline-block; vertical-align:middle; margin-right:10px;">
-    <img src="assets/CVLAB_logo.png" alt="Lab Logo" height="40">
-  </span>
+  
   <span style="display:inline-block; vertical-align:middle;">
     <b>Soyeon Na</b> &nbsp;&nbsp;
     <b>Seung Young Noh</b> &nbsp;&nbsp;
     <b>Ju Yong Chang</b>
+  </span>
+  <span style="display:inline-block; vertical-align:middle; margin-right:10px;">
+    <img src="assets/CVLAB_logo.png" alt="Lab Logo" height="40">
   </span>
 </p>
 
