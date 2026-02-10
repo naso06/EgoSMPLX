@@ -1,15 +1,12 @@
 # Egocentric Whole-body Human Mesh Recovery with Prior-guided Learning 
 <p align="center">
 
-  <img src="assets/CVLAB_logo.png" alt="Lab Logo" width="180">
+  <img src="assets/CVLAB_logo.png" alt="Lab Logo" width="100">
 </p>
 
 
 <p align="center">
   <b>Soyeon Na</b> &nbsp;&nbsp; <b>Seung Young Noh</b> &nbsp;&nbsp; <b>Ju Yong Chang</b>
-  <br>
-  Dept. of ECE, Kwangwoon University, Seoul, Korea
-  <br>
   <code>{naso06, kelvinnoh, jychang}@kw.ac.kr</code>
 </p>
 
