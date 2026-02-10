@@ -33,13 +33,11 @@ Use the following config file for training:
 
 - `config_ft_pesudogt.py`
 
-When running training on a server, pass this file as `<CONFIG_FILE>`.
 
 
 
-## Testing (SLURM)
+## Testing 
 
-To test on a SLURM cluster, run:
 
 ```bash
 sh slurm_test.sh <JOB_NAME> <NUM_GPU> <TRAIN_OUTPUT_DIR> <CKPT_ID>
