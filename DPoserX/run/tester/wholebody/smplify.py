@@ -90,7 +90,7 @@ class DPoser(nn.Module):
         self.score_fn = mutils.get_score_fn(sde, diffusion_model, train=False, continuous=config.training.continuous)
         self.rsde = sde.reverse(self.score_fn, False)
         # L2 loss, set expression as 0.0 for arctic dataset evaluation
-        weight_dict = {'body': 1.0, 'hands': 1.0, 'jaw': 0.0001, 'expression': 0.0}
+        weight_dict = {'body': 1.0, 'hands': 1.0, 'jaw': 0.0, 'expression': 0.0}
         self.part_weights = torch.ones((batch_size, 256), device=self.device)
         self.part_weights[:, :63] = weight_dict['body']
         self.part_weights[:, 63:63 + 90] = weight_dict['hands']

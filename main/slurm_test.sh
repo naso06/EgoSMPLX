@@ -152,9 +152,9 @@ export PYTHONPATH=$(pwd)/..:$PYTHONPATH
 python test.py \
     --num_gpus 1 \
     --exp_name output/egowholebody_result \
-    --result_path /media/cv1/data/output/train_smpler_x_b32_20260203_133627\
+    --result_path /media/cv1/data/output/train_smpler_x_b32_20260204_153257\
     --ckpt_idx 4\
-    --testset  SceneEgo_Test\
+    --testset  EgoWholeBody_Test\
     --agora_benchmark agora_model_val \
     --vis \
     # --vis_2d_pose \

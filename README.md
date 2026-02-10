@@ -1,5 +1,5 @@
 # Egocentric Whole-body Human Mesh Recovery with Prior-guided Learning
-
+![teaser](assets/image4.pdf)
 ## Installation
 
 Install dependencies using `requirements.txt`:
