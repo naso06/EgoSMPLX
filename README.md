@@ -4,7 +4,6 @@
     <td style="vertical-align:middle; padding-right:10px;">
       <img src="assets/CVLAB_logo.png" alt="Lab Logo" height="28">
     </td>
-    <td style="vertical-align:middle;">
       <b>Soyeon Na</b> &nbsp;&nbsp;
       <b>Seung Young Noh</b> &nbsp;&nbsp;
       <b>Ju Yong Chang</b>
@@ -13,7 +12,7 @@
 </table>
 
 <p align="center">
-  <code>{nas006, kelvinnoh, jychang}@kw.ac.kr</code>
+  {nas006, kelvinnoh, jychang}@kw.ac.kr
   <br>
   Dept. of ECE, Kwangwoon University, Seoul, Korea
 </p>
