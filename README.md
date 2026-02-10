@@ -4,9 +4,6 @@
   <img src="assets/CVLAB_logo.png" alt="Lab Logo" width="180">
 </p>
 
-<h2 align="center">
-  EGOCENTRIC WHOLE-BODY HUMAN MESH RECOVERY WITH PRIOR-GUIDED LEARNING
-</h2>
 
 <p align="center">
   <b>Soyeon Na</b> &nbsp;&nbsp; <b>Seung Young Noh</b> &nbsp;&nbsp; <b>Ju Yong Chang</b>
