@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  {nas006, kelvinnoh, jychang}@kw.ac.kr
+  {naso06, kelvinnoh, jychang}@kw.ac.kr
   <br>
   Dept. of ECE, Kwangwoon University, Seoul, Korea
 </p>
