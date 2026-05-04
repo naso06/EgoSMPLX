@@ -33,8 +33,17 @@ Use the following config file for training:
 
 - `config_ft_pesudogt.py`
 
+## Pretrained Checkpoints
 
+You can download pretrained checkpoints from Google Drive:
 
+- [Download Checkpoint](https://drive.google.com/your-checkpoint-link)
+
+After downloading, place the checkpoint file in your desired directory, for example:
+
+```bash
+mkdir -p checkpoints
+mv <downloaded_file>.pth checkpoints/
 
 ## Testing 
 
