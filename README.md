@@ -37,14 +37,8 @@ Use the following config file for training:
 
 You can download pretrained checkpoints from Google Drive:
 
-- [Download Checkpoint](https://drive.google.com/your-checkpoint-link)
+- [Download Checkpoint]([https://drive.google.com/your-checkpoint-link](https://drive.google.com/drive/folders/1qhWqgy95NeWAGQnZ12a2PthyxciVHzx7?usp=drive_link))
 
-After downloading, place the checkpoint file in your desired directory, for example:
-
-```bash
-mkdir -p checkpoints
-mv <downloaded_file>.pth checkpoints/
-```
 
 ## Testing 
 
