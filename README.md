@@ -33,11 +33,11 @@ Use the following config file for training:
 
 - `config_ft_pesudogt.py`
 
-## Pretrained Checkpoints
+## Pretrained Checkpoints and pseudo-GT
 
-You can download pretrained checkpoints from Google Drive:
+You can download pretrained checkpoints and pseudo-GT from Google Drive:
 
--  [Download Checkpoint](https://drive.google.com/drive/folders/1xi-m8PsnYs6QemK4jRD5iNRUfF_3s8l_?usp=drive_link)
+-  [Download Checkpoint](https://drive.google.com/drive/folders/1qhWqgy95NeWAGQnZ12a2PthyxciVHzx7?usp=drive_link)
 
 
 ## Testing 
