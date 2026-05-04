@@ -44,7 +44,7 @@ After downloading, place the checkpoint file in your desired directory, for exam
 ```bash
 mkdir -p checkpoints
 mv <downloaded_file>.pth checkpoints/
-'''
+```
 
 ## Testing 
 
