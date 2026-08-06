@@ -35,7 +35,7 @@ Use the following config file for training:
 
 ## Pretrained Checkpoints and pseudo-GT
 
-You can download pretrained checkpoints and pseudo-GT for EgoPW train and test dataset from Google Drive:
+You can download the pretrained checkpoints and pseudo-GT for the EgoPW train and test datasets from Hugging Face:
 
 -  [Download Pretrained Checkpoints](https://huggingface.co/tmddud20/EgoSMPLX)
 -  [Download pseudo-GT](https://huggingface.co/datasets/tmddud20/EgoSMPLX)
